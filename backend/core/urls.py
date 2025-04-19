@@ -28,16 +28,21 @@ from rest_framework.routers import DefaultRouter
 from users.views import UserViewSet
 from access_requests.views import ApplicationViewSet, AccessRequestViewSet, UserAccessViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from access_requests.views import AccessHistoryViewSet
+from users.views import get_current_user 
+
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet)
 router.register(r'applications', ApplicationViewSet)
 router.register(r'access-requests', AccessRequestViewSet, basename='access-request')
 router.register(r'user-accesses', UserAccessViewSet, basename='user-access')
+router.register(r'access-history', AccessHistoryViewSet, basename='access-history')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/users/me/', get_current_user, name='current_user'),
 ]

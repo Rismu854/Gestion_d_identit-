@@ -43,3 +43,23 @@ class UserAccess(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.application.name}"
+    
+    # access_requests/models.py (ajouter à la fin)
+class AccessHistory(models.Model):
+    ACTION_CHOICES = (
+        ('GRANTED', 'Access Granted'),
+        ('REVOKED', 'Access Revoked'),
+        ('REQUESTED', 'Access Requested'),
+        ('APPROVED', 'Request Approved'),
+        ('REJECTED', 'Request Rejected'),
+    )
+    
+    user = models.ForeignKey('users.User', related_name="history_records", on_delete=models.CASCADE)
+    application = models.ForeignKey(Application, related_name="history_records", on_delete=models.CASCADE)
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    performed_by = models.ForeignKey('users.User', related_name="performed_actions", on_delete=models.CASCADE)
+    details = models.TextField(blank=True, null=True)
+    
+    class Meta:
+        ordering = ['-timestamp']

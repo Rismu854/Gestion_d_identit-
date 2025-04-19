@@ -5,6 +5,9 @@ from rest_framework.response import Response
 from django.utils import timezone
 from access_requests.models import Application, AccessRequest, UserAccess
 from .serializers import ApplicationSerializer, AccessRequestSerializer, UserAccessSerializer
+from .models import AccessHistory
+from access_requests.models import AccessHistory
+from .serializers import AccessHistorySerializer
 
 class ApplicationViewSet(viewsets.ModelViewSet):
     queryset = Application.objects.all()
@@ -47,6 +50,23 @@ class AccessRequestViewSet(viewsets.ModelViewSet):
             user=access_request.requester,
             application=access_request.application,
             granted_by=request.user
+        )
+            # Create history record for approval
+        AccessHistory.objects.create(
+            user=access_request.requester,
+            application=access_request.application,
+            action='APPROVED',
+            performed_by=request.user,
+            details=f"Request approved with comment: {access_request.comments}"
+        )
+        
+    # Create history record for access grant
+        AccessHistory.objects.create(
+            user=access_request.requester,
+            application=access_request.application,
+            action='GRANTED',
+            performed_by=request.user,
+            details=f"Access granted until {user_access.expiry_date}"
         )
         
         return Response(AccessRequestSerializer(access_request).data)
@@ -91,3 +111,17 @@ class UserAccessViewSet(viewsets.ModelViewSet):
         
         user_access.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    # access_requests/views.py (ajouter à la fin)
+class AccessHistoryViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = AccessHistorySerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'ADMIN':
+            return AccessHistory.objects.all()
+        elif user.role == 'APPROVER':
+            return AccessHistory.objects.filter(application__owner=user) | AccessHistory.objects.filter(user=user)
+        else:
+            return AccessHistory.objects.filter(user=user)
